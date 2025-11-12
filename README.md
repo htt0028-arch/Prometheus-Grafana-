@@ -117,7 +117,7 @@ ufw/fail2banを使った基本的なサーバ防御
 Prometheusの設定構成（scrape targetの概念）
 Grafanaダッシュボードでの監視可視化
 🧑‍💻 作者
-総一郎 / Souichiro Mitsuhashi AWS CLF保有 / SAA学習中 Linux運用・監視の基礎を独学中
+htt0028-archi AWS CLF保有 / SAA学習中 Linux運用・監視の基礎を独学中
 
 
 ---
