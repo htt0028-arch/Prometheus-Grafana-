@@ -45,10 +45,14 @@ After=network.target
 
 [Service]
 User=nodeusr
+Group=nodeusr
+Type=simple
 ExecStart=/usr/local/bin/node_exporter
+Restart=always
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
+
 EOF
 sudo systemctl enable node_exporter
 sudo systemctl start node_exporter
