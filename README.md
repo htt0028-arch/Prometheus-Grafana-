@@ -1,44 +1,100 @@
-# Prometheus-Grafana-
-Linux監視環境構築（Prometheus + Grafana + Node Exporter）
+# 🚀 Linux監視環境構築（Prometheus + Node Exporter + Grafana）
 
-# 🖥️ Linux監視環境構築（Prometheus + Grafana + Node Exporter）
-
-## 📌 プロジェクト概要
-このプロジェクトは、仮想環境（VirtualBox / WSL2）上の Ubuntu サーバに  
-**Prometheus・Node Exporter・Grafana** を構築し、  
-Linuxサーバのリソースを可視化・監視する環境を実装したものです。
-
-バックエンドエンジニアとしてLinux運用や監視の基礎を理解する目的で作成しました。
+![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-DA4B2A?logo=prometheus\&logoColor=white)
+![Grafana](https://img.shields.io/badge/Grafana-Dashboard-F46800?logo=grafana\&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-Server-333?logo=linux\&logoColor=white)
+![Systemd](https://img.shields.io/badge/Systemd-Service-blue?logo=systemd\&logoColor=white)
+![UFW](https://img.shields.io/badge/Security-UFW%2Ffail2ban-green)
 
 ---
 
-## 🧰 使用技術
-| 種類 | 使用ツール・技術 |
-|------|----------------|
-| OS | Ubuntu 22.04 LTS |
-| 監視 | Prometheus / Node Exporter |
-| 可視化 | Grafana |
-| Webサーバ | Nginx（静的HTML確認用） |
-| セキュリティ | UFW / Fail2ban |
-| 管理 | systemctl（systemd） |
+## 📋 プロジェクト概要
+
+仮想Linux環境（Lubuntu）上に **Prometheus + Node Exporter + Grafana** を構築し、
+CPU・メモリ・ディスク・ロードアベレージなどのメトリクスをリアルタイムで監視する環境を作成。
+実際の運用を意識した構成・設定・サービス管理を実践しています。
 
 ---
 
-## ⚙️ 構成図
-[Node Exporter] → [Prometheus] → [Grafana Dashboard]
+## 🏗️ システム構成図（Mermaid形式）
 
+```mermaid
+graph TD
+
+subgraph Client
+    A[🧑‍💻 管理者PC<br>(ブラウザ)]
+end
+
+subgraph Server["Linux仮想サーバ (Lubuntu)"]
+    B[🟢 Prometheus<br>:9090]
+    C[🟠 Grafana<br>:3000]
+    D[📦 Node Exporter<br>:9100]
+end
+
+A -->|HTTPアクセス| C
+C -->|PromQLクエリ| B
+B -->|/metrics取得| D
+```
+
+> Prometheus が Node Exporter からメトリクスを収集し、
+> Grafana がそれを可視化してブラウザで表示する構成。
 
 ---
 
-## 🧱 セットアップ手順（概要）
+## ⚙️ 構築手順（概要）
 
-### 1️⃣ Node Exporter の導入
+### 1️⃣ 仮想環境セットアップ
+
+* VirtualBox もしくは WSL2 上に **Lubuntu** を構築
+* 基本パッケージ更新
+
+  ```bash
+  sudo apt update && sudo apt upgrade -y
+  ```
+
+---
+
+### 2️⃣ Prometheus のインストール
+
 ```bash
-wget https://github.com/prometheus/node_exporter/releases/download/v1.10.2/node_exporter-1.10.2.linux-amd64.tar.gz
-tar xvf node_exporter-*.tar.gz
-sudo mv node_exporter-*/node_exporter /usr/local/bin/
+cd /opt
+sudo wget https://github.com/prometheus/prometheus/releases/download/v2.55.1/prometheus-2.55.1.linux-amd64.tar.gz
+sudo tar xvf prometheus-2.55.1.linux-amd64.tar.gz
+sudo mv prometheus-2.55.1.linux-amd64 prometheus
+```
+
+#### 設定ファイル例 `/opt/prometheus/prometheus.yml`
+
+```yaml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "node_exporter"
+    static_configs:
+      - targets: ["localhost:9100"]
+```
+
+---
+
+### 3️⃣ Node Exporter のインストール
+
+```bash
+cd /opt
+sudo wget https://github.com/prometheus/node_exporter/releases/download/v1.10.2/node_exporter-1.10.2.linux-amd64.tar.gz
+sudo tar xvf node_exporter-1.10.2.linux-amd64.tar.gz
+sudo mv node_exporter-1.10.2.linux-amd64 node_exporter
 sudo useradd -rs /bin/false nodeusr
-sudo tee /etc/systemd/system/node_exporter.service <<EOF
+sudo chown nodeusr:nodeusr /usr/local/bin/node_exporter
+```
+
+#### systemd 設定 `/etc/systemd/system/node_exporter.service`
+
+```ini
 [Unit]
 Description=Node Exporter
 After=network.target
@@ -53,93 +109,207 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 
-EOF
-sudo systemctl enable node_exporter
-sudo systemctl start node_exporter
-2️⃣ Prometheus の導入
-wget https://github.com/prometheus/prometheus/releases/download/v2.55.1/prometheus-2.55.1.linux-amd64.tar.gz
-tar xvf prometheus-*.tar.gz
-sudo mv prometheus-*/prometheus /usr/local/bin/
-sudo mv prometheus-*/promtool /usr/local/bin/
-sudo mkdir -p /etc/prometheus /var/lib/prometheus
-sudo cp -r prometheus-*/{consoles,console_libraries} /etc/prometheus/
+```
 
-sudo tee /etc/prometheus/prometheus.yml <<EOF
-global:
-  scrape_interval: 10s
+---
 
-scrape_configs:
-  - job_name: "node"
-    static_configs:
-      - targets: ["localhost:9100"]
-EOF
+### 4️⃣ Grafana のインストール
 
-sudo tee /etc/systemd/system/prometheus.service <<EOF
-[Unit]
-Description=Prometheus
-After=network.target
-
-[Service]
-ExecStart=/usr/local/bin/prometheus \
-  --config.file=/etc/prometheus/prometheus.yml \
-  --storage.tsdb.path=/var/lib/prometheus \
-  --web.listen-address=:9090
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOF
-sudo systemctl enable prometheus
-sudo systemctl start prometheus
-3️⃣ Grafana の導入
+```bash
+sudo mkdir -p /etc/apt/keyrings/
+wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/grafana.gpg > /dev/null
+echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | sudo tee /etc/apt/sources.list.d/grafana.list
+sudo apt update
 sudo apt install grafana -y
 sudo systemctl enable grafana-server
 sudo systemctl start grafana-server
-ブラウザでアクセス： ➡ http://localhost:3000 ログイン：admin / admin（初回はパスワード変更）
+```
 
-📊 Grafana ダッシュボード設定
-Prometheus をデータソースとして追加
+---
 
-URL: http://localhost:9090
-ダッシュボードのインポート
+### 5️⃣ Grafana設定
 
-Node Exporter 用公式ID: 1860
-🔐 セキュリティ設定（任意）
-# ファイアウォール有効化
-sudo ufw enable
-sudo ufw allow 22/tcp
-sudo ufw allow 3000/tcp
-sudo ufw allow 9090/tcp
+* ブラウザでアクセス → `http://<サーバIP>:3000`
+* 初期ログイン → `admin / admin`
+* データソース追加 → Prometheus（URL: `http://localhost:9090`）
+* ダッシュボードID **1860** を Import
 
-# SSHブルートフォース対策
-sudo apt install fail2ban -y
-sudo systemctl enable fail2ban
-sudo systemctl start fail2ban
-🧩 学んだこと
-systemctlによるサービス管理
-ufw/fail2banを使った基本的なサーバ防御
-Prometheusの設定構成（scrape targetの概念）
-Grafanaダッシュボードでの監視可視化
-🧑‍💻 作者
-htt0028-archi AWS CLF保有 / SAA学習中 Linux運用・監視の基礎を独学中
+---
+
+## 🧩 理解しておくと良い Linux コマンド集（監視・運用向け）
+
+この構築を通じて利用・理解しておくべき主要コマンドを整理しました。  
+システム管理、ネットワーク確認、セキュリティ設定、ログ解析などの基本を押さえています。
+
+---
+
+### 🧠 サービス管理（systemd 関連）
+
+| コマンド | 説明 |
+|-----------|------|
+| `systemctl status <サービス名>` | サービスの状態確認（active, failed など） |
+| `systemctl start <サービス名>` | サービスの起動 |
+| `systemctl stop <サービス名>` | サービスの停止 |
+| `systemctl restart <サービス名>` | 再起動（設定変更時に使用） |
+| `systemctl enable <サービス名>` | 自動起動の有効化（再起動後も起動） |
+| `systemctl disable <サービス名>` | 自動起動の無効化 |
+| `journalctl -u <サービス名>` | サービスのログ出力を確認 |
+| `systemctl daemon-reload` | 新しいUnitファイルを読み込む（変更後に必須） |
+
+> 🧩 例：`journalctl -u node_exporter -f`  
+> リアルタイムで Node Exporter のログを追跡（トラブル解析に便利）
+
+---
+
+### 🌐 ネットワーク関連
+
+| コマンド | 説明 |
+|-----------|------|
+| `ss -tulnp` | 現在リッスンしているポートを表示（旧 netstat） |
+| `curl http://localhost:9100/metrics` | HTTP通信確認（Node Exporter動作確認） |
+| `ping <ホスト名 or IP>` | 通信可否の確認 |
+| `hostname -I` | 自サーバのIPアドレス確認 |
+| `ufw status` | ファイアウォールの許可ルール確認 |
+| `ufw allow 9090/tcp` | Prometheusポートを開放 |
+| `ufw enable` | ufw（Firewall）有効化 |
+| `ufw disable` | ufw無効化 |
+
+> 💡 ufw（Uncomplicated Firewall）はUbuntu標準のシンプルなFirewall。  
+> 外部アクセスを制御してPrometheusやGrafanaの公開範囲を管理できます。
+
+---
+
+### 🛡️ セキュリティ（fail2ban など）
+
+| コマンド | 説明 |
+|-----------|------|
+| `sudo apt install fail2ban -y` | SSHブルートフォース対策ツールの導入 |
+| `sudo systemctl enable fail2ban` | 自動起動設定 |
+| `sudo fail2ban-client status` | 保護対象サービスと検知状況を確認 |
+| `/etc/fail2ban/jail.local` | 設定ファイルの変更場所（例: SSH保護ポリシー） |
+
+> 🔐 fail2ban は不正ログインを自動検知してIPをブロック。  
+> サーバを公開運用する場合のセキュリティ基礎ツールです。
+
+---
+
+### 🧾 システム状態・監視
+
+| コマンド | 説明 |
+|-----------|------|
+| `top` / `htop` | CPU・メモリ使用率のリアルタイム確認 |
+| `free -h` | メモリ使用量の確認 |
+| `df -h` | ディスク使用量確認 |
+| `du -sh /var/log` | ログディレクトリの容量確認 |
+| `ps aux | grep <プロセス名>` | 特定プロセスの状態確認 |
+| `uptime` | 稼働時間とロードアベレージ確認 |
+
+> 💡 Grafanaで可視化されるメトリクス（CPU、メモリ、ロード）は、  
+> 実際にはこれらのコマンドが自動で数値化されたものです。
+
+---
+
+### 🧰 ファイル・パーミッション操作
+
+| コマンド | 説明 |
+|-----------|------|
+| `ls -l` | 権限・所有者の確認 |
+| `chmod +x <ファイル>` | 実行権限の付与（例: node_exporter実行ファイル） |
+| `chown user:group <ファイル>` | 所有者の変更 |
+| `nano <ファイル>` | テキスト編集 |
+| `cat /etc/passwd` | システムユーザー一覧表示 |
+| `useradd -rs /bin/false nodeusr` | ログイン不可ユーザーの作成（セキュリティ目的） |
+
+---
+
+### 🧹 トラブルシューティングの基本流れ
+
+| ステップ | 目的 | コマンド例 |
+|-----------|------|-------------|
+| ① サービスの状態確認 | 起動しているか | `systemctl status node_exporter` |
+| ② ログ確認 | エラー詳細を調べる | `journalctl -xeu node_exporter` |
+| ③ ポート確認 | リッスン状態か | `ss -tulnp | grep 9100` |
+| ④ 手動起動テスト | 実行可能か確認 | `/usr/local/bin/node_exporter` |
+| ⑤ 設定修正 & 再読み込み | 設定変更反映 | `sudo systemctl daemon-reload && sudo systemctl restart node_exporter` |
+
+> 🧩 「Active: failed」「Start request repeated too quickly」と出た場合は、  
+> `ExecStart` パスの誤り・権限不足・ポート競合を優先的に確認。
+
+---
+### 🧩 トラブルシューティング例
+
+| 症状                                   | 原因                      | 対応                               |
+| ------------------------------------ | ----------------------- | -------------------------------- |
+| `Active: failed (exit-code)`         | ExecStartのパスミス or 権限不足  | 実行権確認・再設定                        |
+| `Start request repeated too quickly` | 起動失敗を繰り返し               | `journalctl -xeu <サービス>`で詳細確認    |
+| GrafanaでPrometheus見つからない             | URL設定誤り or Prometheus停止 | `systemctl status prometheus`で確認 |
+| ダッシュボードが真っ白                          | node_exporter未起動        | `curl localhost:9100/metrics`で確認 |
+
+---
+
+
+## 🧭 まとめ
+
+Linuxサーバ監視構築の過程で、以下のスキル領域を体系的に理解できました。
+
+| 分野 | スキル要素 |
+|------|-------------|
+| サービス管理 | systemd, journalctl |
+| 監視基盤 | Prometheus, Node Exporter, Grafana |
+| ネットワーク | ポート通信, ufw設定 |
+| セキュリティ | fail2ban, 非ログインユーザー作成 |
+| 運用実務 | トラブル対応・ログ解析・永続化設定 |
 
 
 ---
 
-## 🧠 Part ②：Linux運用で理解しておくべきコマンド解説集
+## 🧾 成果と学び
 
-
-| コマンド | 用途 | 具体例 | 説明 |
-|-----------|------|--------|------|
-| `systemctl` | サービス管理 | `sudo systemctl status nginx` | サービスの起動・停止・自動起動設定などを制御する。systemdのフロントエンド。 |
-| `journalctl` | ログ閲覧 | `sudo journalctl -u prometheus` | systemdが管理するログの閲覧。トラブルシュートで重要。 |
-| `ufw` | ファイアウォール設定 | `sudo ufw allow 22/tcp` | Ubuntuの簡易ファイアウォール。ポート許可・拒否の設定を行う。 |
-| `fail2ban` | 不正アクセス防御 | `sudo fail2ban-client status sshd` | ログを監視して、繰り返しログイン失敗するIPを自動BANする。 |
-| `tar` | アーカイブ展開 | `tar xvf file.tar.gz` | ソースやバイナリ配布でよく使う圧縮ファイルの展開。 |
-| `wget / curl` | ファイルダウンロード | `wget https://example.com/file` | ソフトウェアを直接ダウンロード。curlはパイプ接続にも使える。 |
-| `chmod / chown` | 権限設定 | `sudo chown -R www-data:www-data /var/www` | 所有者や実行権限を調整。サービスが動かない時の原因になりやすい。 |
-| `netstat / ss` | ポート確認 | `sudo ss -tuln` | どのポートが開いているか、サービスがリッスンしているか確認。 |
-| `ps / top` | プロセス確認 | `ps aux | grep nginx` | 稼働中のプロセス確認・リソース監視。 |
-| `df / du` | ディスク容量確認 | `df -h` | ディスク容量や使用率を確認。Prometheusの監視項目にも重要。 |
+| 観点     | 学んだこと                       |
+| ------ | --------------------------- |
+| 構築スキル  | Linuxサーバ上に複数サービスを連携構築       |
+| 運用スキル  | systemd / journalctl での監視管理 |
+| セキュリティ | ufw, fail2ban による攻撃耐性強化     |
+| 可視化    | Grafanaでメトリクスダッシュボード構築      |
+| 理解深化   | Prometheusのpull型アーキテクチャ理解   |
 
 ---
+
+## 📸 成果イメージ（例）
+
+> 監視ダッシュボード（ID: 1860）
+>
+> * CPU / メモリ / ディスク / Load Average をリアルタイム表示
+> * Node Exporter経由でLinuxホストを自動収集
+
+（※スクリーンショットをここに貼付）
+
+---
+
+## 📚 使用技術
+
+* OS: **Lubuntu 22.04 LTS**
+* 監視: **Prometheus v2.55.1**
+* エージェント: **Node Exporter v1.10.2**
+* 可視化: **Grafana OSS v11**
+* サービス管理: **systemd**
+* セキュリティ: **ufw, fail2ban**
+
+---
+
+## 🧭 今後の展開
+
+* CloudWatch や Loki との連携
+* Docker化での移植性向上
+* Slack通知による障害検知自動化
+* EC2上での再構築・IaC化（Terraform予定）
+
+---
+
+✨ **構築・運用スキルを可視化した学習成果ポートフォリオ**
+
+> 実運用を意識した監視・セキュリティ・トラブル対応を総合的に実践。
+
+---
+
+
