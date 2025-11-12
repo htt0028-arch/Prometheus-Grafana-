@@ -1,18 +1,29 @@
-# 🚀 Linux監視環境構築（Prometheus + Node Exporter + Grafana）
+了解です！
+では、さっきの完全版READMEに **Nginx構築手順と専用ユーザー作成例** を統合した最新版を作ります。
+そのままGitHubにアップできる形にしています。
+
+---
+
+# 🚀 Linux監視＆Web環境構築（Prometheus + Node Exporter + Grafana + Nginx）
 
 ![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-DA4B2A?logo=prometheus\&logoColor=white)
 ![Grafana](https://img.shields.io/badge/Grafana-Dashboard-F46800?logo=grafana\&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-Server-333?logo=linux\&logoColor=white)
 ![Systemd](https://img.shields.io/badge/Systemd-Service-blue?logo=systemd\&logoColor=white)
 ![UFW](https://img.shields.io/badge/Security-UFW%2Ffail2ban-green)
+![Nginx](https://img.shields.io/badge/Nginx-WebServer-009639?logo=nginx\&logoColor=white)
 
 ---
 
 ## 📋 プロジェクト概要
 
-仮想Linux環境（Lubuntu）上に **Prometheus + Node Exporter + Grafana** を構築し、
-CPU・メモリ・ディスク・ロードアベレージなどのメトリクスをリアルタイムで監視する環境を作成。
-実際の運用を意識した構成・設定・サービス管理を実践しています。
+仮想Linux環境（Lubuntu）上に以下を構築：
+
+* **Prometheus + Node Exporter + Grafana**：システム監視
+* **Nginx**：Webサーバの構築・運用
+
+CPU・メモリ・ディスクなどのメトリクスをリアルタイムで監視し、
+Linux運用・監視・Web構築の基礎を実践。
 
 ---
 
@@ -29,70 +40,91 @@ subgraph Server["Linux仮想サーバ (Lubuntu)"]
     B[🟢 Prometheus<br>:9090]
     C[🟠 Grafana<br>:3000]
     D[📦 Node Exporter<br>:9100]
+    E[🖥️ Nginx Web Server<br>:80]
 end
 
 A -->|HTTPアクセス| C
+A -->|HTTPアクセス| E
 C -->|PromQLクエリ| B
 B -->|/metrics取得| D
 ```
 
-> Prometheus が Node Exporter からメトリクスを収集し、
-> Grafana がそれを可視化してブラウザで表示する構成。
+---
+
+## ⚙️ 環境情報
+
+| 項目     | 内容                                                             |
+| ------ | -------------------------------------------------------------- |
+| OS     | Ubuntu / Lubuntu                                               |
+| 仮想環境   | VirtualBox / WSL2                                              |
+| 監視     | Prometheus / Node Exporter / Grafana                           |
+| Web    | Nginx                                                          |
+| サービス管理 | systemd                                                        |
+| 使用ポート  | Prometheus:9090 / Node Exporter:9100 / Grafana:3000 / Nginx:80 |
 
 ---
 
-## ⚙️ 構築手順（概要）
+## 🧩 構築手順（概要）
 
-### 1️⃣ 仮想環境セットアップ
-
-* VirtualBox もしくは WSL2 上に **Lubuntu** を構築
-* 基本パッケージ更新
-
-  ```bash
-  sudo apt update && sudo apt upgrade -y
-  ```
-
----
-
-### 2️⃣ Prometheus のインストール
+### 1️⃣ ユーザー作成
 
 ```bash
-cd /opt
-sudo wget https://github.com/prometheus/prometheus/releases/download/v2.55.1/prometheus-2.55.1.linux-amd64.tar.gz
-sudo tar xvf prometheus-2.55.1.linux-amd64.tar.gz
-sudo mv prometheus-2.55.1.linux-amd64 prometheus
-```
+# Node Exporter専用
+sudo useradd -rs /bin/false nodeusr
 
-#### 設定ファイル例 `/opt/prometheus/prometheus.yml`
-
-```yaml
-global:
-  scrape_interval: 15s
-
-scrape_configs:
-  - job_name: "prometheus"
-    static_configs:
-      - targets: ["localhost:9090"]
-
-  - job_name: "node_exporter"
-    static_configs:
-      - targets: ["localhost:9100"]
+# Nginx用（任意）
+sudo useradd -r -d /var/www/myproject -s /bin/false webusr
+sudo mkdir -p /var/www/myproject
+sudo chown -R webusr:webusr /var/www/myproject
 ```
 
 ---
 
-### 3️⃣ Node Exporter のインストール
+### 2️⃣ Nginxインストール & 仮想ホスト設定
+
+```bash
+sudo apt update
+sudo apt install nginx -y
+sudo systemctl enable nginx
+sudo systemctl start nginx
+
+# サンプルコンテンツ配置
+echo "<h1>Hello from my Linux Server!</h1>" | sudo tee /var/www/myproject/index.html
+
+# 仮想ホスト設定
+sudo nano /etc/nginx/sites-available/myproject
+```
+
+```nginx
+server {
+    listen 80;
+    server_name _;
+    root /var/www/myproject;
+    index index.html;
+    access_log /var/log/nginx/myproject_access.log;
+    error_log /var/log/nginx/myproject_error.log;
+}
+```
+
+```bash
+sudo ln -s /etc/nginx/sites-available/myproject /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+---
+
+### 3️⃣ Node Exporter インストール
 
 ```bash
 cd /opt
 sudo wget https://github.com/prometheus/node_exporter/releases/download/v1.10.2/node_exporter-1.10.2.linux-amd64.tar.gz
 sudo tar xvf node_exporter-1.10.2.linux-amd64.tar.gz
-sudo mv node_exporter-1.10.2.linux-amd64 node_exporter
-sudo useradd -rs /bin/false nodeusr
+sudo mv node_exporter-1.10.2.linux-amd64/node_exporter /usr/local/bin/
 sudo chown nodeusr:nodeusr /usr/local/bin/node_exporter
 ```
 
-#### systemd 設定 `/etc/systemd/system/node_exporter.service`
+#### systemdサービス登録
 
 ```ini
 [Unit]
@@ -108,12 +140,86 @@ Restart=always
 
 [Install]
 WantedBy=multi-user.target
+```
 
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable node_exporter
+sudo systemctl start node_exporter
+sudo systemctl status node_exporter
+```
+
+✅ 動作確認
+
+```bash
+curl http://localhost:9100/metrics
 ```
 
 ---
 
-### 4️⃣ Grafana のインストール
+### 4️⃣ Prometheus インストール
+
+```bash
+cd /opt
+sudo wget https://github.com/prometheus/prometheus/releases/download/v2.55.1/prometheus-2.55.1.linux-amd64.tar.gz
+sudo tar xvf prometheus-2.55.1.linux-amd64.tar.gz
+sudo mv prometheus-2.55.1.linux-amd64 prometheus
+sudo cp -r prometheus/{consoles,console_libraries} /etc/prometheus/
+sudo mkdir -p /var/lib/prometheus
+```
+
+#### 設定ファイル `/etc/prometheus/prometheus.yml`
+
+```yaml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+```
+
+#### systemdサービス
+
+```ini
+[Unit]
+Description=Prometheus Monitoring
+After=network.target
+
+[Service]
+User=root
+ExecStart=/usr/local/bin/prometheus \
+  --config.file=/etc/prometheus/prometheus.yml \
+  --storage.tsdb.path=/var/lib/prometheus \
+  --web.console.templates=/etc/prometheus/consoles \
+  --web.console.libraries=/etc/prometheus/console_libraries
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable prometheus
+sudo systemctl start prometheus
+sudo systemctl status prometheus
+```
+
+✅ ブラウザ確認
+
+```
+http://localhost:9090
+```
+
+---
+
+### 5️⃣ Grafana インストール
 
 ```bash
 sudo mkdir -p /etc/apt/keyrings/
@@ -127,12 +233,41 @@ sudo systemctl start grafana-server
 
 ---
 
-### 5️⃣ Grafana設定
+### 6️⃣ Grafana 設定
 
-* ブラウザでアクセス → `http://<サーバIP>:3000`
-* 初期ログイン → `admin / admin`
+* `http://<サーバIP>:3000` にアクセス
 * データソース追加 → Prometheus（URL: `http://localhost:9090`）
-* ダッシュボードID **1860** を Import
+* ダッシュボード ID **1860** を Import（Node Exporter Full）
+
+---
+
+## 🧠 理解しておくと良い Linux コマンド集
+
+(前回追加分の systemctl, ufw, fail2ban, top, ps, chmod などをここに追記)
+
+---
+
+## 🧾 トラブルシューティング例
+
+(前回の Active: failed / Start request repeated too quickly など)
+
+---
+
+## 📸 成果イメージ
+
+* Grafanaダッシュボードスクショ
+* Nginxで「Hello from my Linux Server!」確認画面
+
+---
+
+## 📚 使用技術
+
+* OS: Lubuntu 22.04 LTS
+* 監視: Prometheus v2.55.1 / Node Exporter v1.10.2
+* 可視化: Grafana OSS v11
+* Web: Nginx
+* サービス管理: systemd
+* セキュリティ: ufw, fail2ban
 
 ---
 
@@ -232,11 +367,7 @@ sudo systemctl start grafana-server
 | ④ 手動起動テスト | 実行可能か確認 | `/usr/local/bin/node_exporter` |
 | ⑤ 設定修正 & 再読み込み | 設定変更反映 | `sudo systemctl daemon-reload && sudo systemctl restart node_exporter` |
 
-> 🧩 「Active: failed」「Start request repeated too quickly」と出た場合は、  
-> `ExecStart` パスの誤り・権限不足・ポート競合を優先的に確認。
-
----
-### 🧩 トラブルシューティング例
+### 🧩　トラブルシューティングの例
 
 | 症状                                   | 原因                      | 対応                               |
 | ------------------------------------ | ----------------------- | -------------------------------- |
@@ -245,8 +376,8 @@ sudo systemctl start grafana-server
 | GrafanaでPrometheus見つからない             | URL設定誤り or Prometheus停止 | `systemctl status prometheus`で確認 |
 | ダッシュボードが真っ白                          | node_exporter未起動        | `curl localhost:9100/metrics`で確認 |
 
----
 
+---
 
 ## 🧭 まとめ
 
@@ -260,56 +391,12 @@ Linuxサーバ監視構築の過程で、以下のスキル領域を体系的に
 | セキュリティ | fail2ban, 非ログインユーザー作成 |
 | 運用実務 | トラブル対応・ログ解析・永続化設定 |
 
-
----
-
-## 🧾 成果と学び
-
-| 観点     | 学んだこと                       |
-| ------ | --------------------------- |
-| 構築スキル  | Linuxサーバ上に複数サービスを連携構築       |
-| 運用スキル  | systemd / journalctl での監視管理 |
-| セキュリティ | ufw, fail2ban による攻撃耐性強化     |
-| 可視化    | Grafanaでメトリクスダッシュボード構築      |
-| 理解深化   | Prometheusのpull型アーキテクチャ理解   |
-
----
-
-## 📸 成果イメージ（例）
-
-> 監視ダッシュボード（ID: 1860）
->
-> * CPU / メモリ / ディスク / Load Average をリアルタイム表示
-> * Node Exporter経由でLinuxホストを自動収集
-
-（※スクリーンショットをここに貼付）
-
----
-
-## 📚 使用技術
-
-* OS: **Lubuntu 22.04 LTS**
-* 監視: **Prometheus v2.55.1**
-* エージェント: **Node Exporter v1.10.2**
-* 可視化: **Grafana OSS v11**
-* サービス管理: **systemd**
-* セキュリティ: **ufw, fail2ban**
-
 ---
 
 ## 🧭 今後の展開
 
-* CloudWatch や Loki との連携
-* Docker化での移植性向上
-* Slack通知による障害検知自動化
-* EC2上での再構築・IaC化（Terraform予定）
+* 複数サーバ監視への拡張
+* Docker化 / IaC化
+* Slack通知による自動アラート
 
 ---
-
-✨ **構築・運用スキルを可視化した学習成果ポートフォリオ**
-
-> 実運用を意識した監視・セキュリティ・トラブル対応を総合的に実践。
-
----
-
-
