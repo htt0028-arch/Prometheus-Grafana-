@@ -1,10 +1,5 @@
 了解です！
-では、さっきの完全版READMEに **Nginx構築手順と専用ユーザー作成例** を統合した最新版を作ります。
-そのままGitHubにアップできる形にしています。
-
----
-
-# 🚀 Linux監視＆Web環境構築（Prometheus + Node Exporter + Grafana + Nginx）
+では、さっき# 🚀 Linux監視＆Web環境構築（Prometheus + Node Exporter + Grafana + Nginx）
 
 ![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-DA4B2A?logo=prometheus\&logoColor=white)
 ![Grafana](https://img.shields.io/badge/Grafana-Dashboard-F46800?logo=grafana\&logoColor=white)
