@@ -241,25 +241,6 @@ sudo systemctl start grafana-server
 
 ---
 
-## 🧠 理解しておくと良い Linux コマンド集
-
-(前回追加分の systemctl, ufw, fail2ban, top, ps, chmod などをここに追記)
-
----
-
-## 🧾 トラブルシューティング例
-
-(前回の Active: failed / Start request repeated too quickly など)
-
----
-
-## 📸 成果イメージ
-
-* Grafanaダッシュボードスクショ
-* Nginxで「Hello from my Linux Server!」確認画面
-
----
-
 ## 📚 使用技術
 
 * OS: Lubuntu 22.04 LTS
