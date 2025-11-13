@@ -21,30 +21,6 @@ Linux運用・監視・Web構築の基礎を実践。
 
 ---
 
-## 🏗️ システム構成図（Mermaid形式）
-
-```mermaid
-graph TD
-
-subgraph Client
-    A[🧑‍💻 管理者PC<br>(ブラウザ)]
-end
-
-subgraph Server["Linux仮想サーバ (Lubuntu)"]
-    B[🟢 Prometheus<br>:9090]
-    C[🟠 Grafana<br>:3000]
-    D[📦 Node Exporter<br>:9100]
-    E[🖥️ Nginx Web Server<br>:80]
-end
-
-A -->|HTTPアクセス| C
-A -->|HTTPアクセス| E
-C -->|PromQLクエリ| B
-B -->|/metrics取得| D
-```
-
----
-
 ## ⚙️ 環境情報
 
 | 項目     | 内容                                                             |
