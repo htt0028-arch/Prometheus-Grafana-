@@ -383,6 +383,17 @@ WantedBy=multi-user.target
 ```
 
   * **`ExecStart`** の行では、**Prometheusの実行コマンド**と、**各種設定ファイルの場所**をオプション（`--config.file`など）で指定しています。
+　
+ * --config.file：設定ファイル場所
+　
+ * --storage.tsdb.path：データ保存ディレクトリ
+　
+ * --web.console.templates：コンソールテンプレートの場所
+　
+ * --web.console.libraries：コンソールライブラリーの場所
+　
+ * Restart=always：プロセスを自動再起動
+
 
 #### systemdへの反映とサービスの操作
 
@@ -425,6 +436,20 @@ echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stab
 
   * このコマンドは、**「Grafanaのパッケージは、このURLから取ってきてね」** という情報をAPTに教える設定ファイル（`grafana.list`）を作成しています。
   * `[signed-by=...]` の部分で、先ほど登録した鍵で署名を検証することを指定しています。
+  * echo：GrafanaのAPTリポジトリ情報を文字列として出力
+  * deb [オプション] リポジトリURL ディストリビューション コンポーネント➡APTにどこからどのパッケージをとってきていいかを教える宣言
+  * [オプション]：署名検証キー、アーキテクチャ制限などを指定（省略可）
+  * リポジトリURL：パッケージを置いているサーバーのURL
+  * ディストリビューション：OSのバージョンやリリース名(例：stable,focal,buster)
+  * コンポ－ネント：パッケージの分類(例：main,contrib,non-free)
+
+  *今回のコマンドに落とし込むと*
+  * deb：バイナリパッケージを使う
+  * [signed-by=/etc/apt/keyrings/grafana.gpg]：先ほど登録したGPGキーで署名を確認
+  * sudo tee /etc/apt/sources.list.d/grafana.list：ファイルとして保存(APTのリポジトリ情報として登録)
+  * https://apt.grafana.com：Frafana公式リポジトリ
+  * stable：安定版リリース
+  * main：主要パッケージのカテゴリ
 
 ### 2\. Grafanaのインストールと起動
 
@@ -451,3 +476,4 @@ sudo systemctl status grafana-server
 
 
 これで、Webサーバー、監視データ収集、データ可視化の主要なツールがすべてインストール・設定されました！
+
