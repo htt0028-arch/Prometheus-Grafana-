@@ -39,8 +39,14 @@ Linux運用・監視・Web構築の基礎を実践。
 ### 1️⃣ ユーザー作成
 
 ```bash
+# 一般ユーザを追加（root直操作を避ける）
+sudo apt update && sudo apt upgrade -y
+
 # Node Exporter専用
 sudo useradd -rs /bin/false nodeusr
+
+# Prometheus ユーザー作成
+sudo useradd --no-create-home --shell /bin/false prometheus
 
 # Nginx用（任意）
 sudo useradd -r -d /var/www/myproject -s /bin/false webusr
@@ -80,6 +86,28 @@ server {
 sudo ln -s /etc/nginx/sites-available/myproject /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
+```
+
+---
+
+### 2-1セキュリティ設定
+
+#### UFW(Firewall)
+
+```bash
+sudo apt install ufw -y
+sudo ufw allow 'Nginx Full'
+sudo ufw enable
+sudo ufw status
+````
+
+#### Fail2Ban(不正ログイン)
+
+```bash
+sudo apt install fail2ban -y
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+sudo fail2ban-client status
 ```
 
 ---
