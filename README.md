@@ -123,7 +123,9 @@ sudo chown nodeusr:nodeusr /usr/local/bin/node_exporter
 ```
 
 #### systemdサービス登録
-
+```bash
+sudo nano /etc/systemd/system/node_exporter.service
+```
 ```ini
 [Unit]
 Description=Node Exporter
