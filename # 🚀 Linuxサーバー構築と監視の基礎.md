@@ -255,7 +255,10 @@ Node Exporterをサーバー起動時に自動で立ち上がり、常に裏側�
 
 ### 1\. サービス定義ファイルの作成
 
-`/etc/systemd/system/node_exporter.service` に以下の内容でファイルを作成します。
+`/etc/systemd/system/node_exporter.service` に以下の内容でファイルを作成します。   
+```bash
+sudo nano /etc/systemd/system/node_exporter.service
+```
 
 ```ini
 [Unit]
@@ -476,4 +479,5 @@ sudo systemctl status grafana-server
 
 
 これで、Webサーバー、監視データ収集、データ可視化の主要なツールがすべてインストール・設定されました！
+
 
