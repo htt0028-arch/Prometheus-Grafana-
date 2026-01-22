@@ -330,8 +330,8 @@ mv prometheus-2.55.1.linux-amd64 prometheus
 #### 設定ファイルの準備
 
 ```bash
+mkdir -p /etc/prometheus /var/lib/prometheus
 cp -r prometheus/{consoles,console_libraries} /etc/prometheus/
-mkdir -p /var/lib/prometheus
 ```
 
   * `cp -r`: 設定に必要なフォルダを `/etc/prometheus` に**再帰的にコピー**します。
@@ -479,5 +479,6 @@ sudo systemctl status grafana-server
 
 
 これで、Webサーバー、監視データ収集、データ可視化の主要なツールがすべてインストール・設定されました！
+
 
 
