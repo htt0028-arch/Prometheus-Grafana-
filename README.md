@@ -164,8 +164,8 @@ cd /opt
 sudo wget https://github.com/prometheus/prometheus/releases/download/v2.55.1/prometheus-2.55.1.linux-amd64.tar.gz
 sudo tar xvf prometheus-2.55.1.linux-amd64.tar.gz
 sudo mv prometheus-2.55.1.linux-amd64 prometheus
+mkdir -p /etc/prometheus /var/lib/prometheus
 sudo cp -r prometheus/{consoles,console_libraries} /etc/prometheus/
-sudo mkdir -p /var/lib/prometheus
 ```
 
 #### 設定ファイル `/etc/prometheus/prometheus.yml`
@@ -184,7 +184,7 @@ scrape_configs:
       - targets: ['localhost:9100']
 ```
 
-#### systemdサービス
+#### systemdサービス `/etc/systemd/system/prometheus.services`
 
 ```ini
 [Unit]
