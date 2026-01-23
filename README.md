@@ -259,7 +259,7 @@ Grafana の Dashboards → Node Exporter Full を開くと以下が確認でき�
 |---|---|
 |CPU Usage|CPU使用率の推移|  
 |Memory Usage|メモリ利用率|  
-|Disk Spaceディスク容量の使用状況|  
+|Disk Space|ディスク容量の使用状況|  
 |Network I/O|ネットワーク入出力量|  
 
 ⸻
