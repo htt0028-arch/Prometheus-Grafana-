@@ -251,7 +251,7 @@ sudo systemctl start grafana-server
 　→ ID に 1860 を入力（Node Exporter Full）  
 　→ 「Load」→ Data source に Prometheus を選択 → Import  
 
-##🔍 動作確認（監視可視化）
+## 🔍 動作確認（監視可視化）  
 
 Grafana の Dashboards → Node Exporter Full を開くと以下が確認できます。  
 
