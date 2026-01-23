@@ -251,15 +251,18 @@ sudo systemctl start grafana-server
 　→ ID に 1860 を入力（Node Exporter Full）  
 　→ 「Load」→ Data source に Prometheus を選択 → Import  
 
+##🔍 動作確認（監視可視化）
+
+Grafana の Dashboards → Node Exporter Full を開くと以下が確認できます。  
+
 |監視項目|内容|  
 |---|---|
 |CPU Usage|CPU使用率の推移|  
 |Memory Usage|メモリ利用率|  
 |Disk Spaceディスク容量の使用状況|  
 |Network I/O|ネットワーク入出力量|  
-⸻
 
-🔍 動作確認（監視可視化）
+⸻
 
 Grafana の Dashboards → Node Exporter Full を開くと以下が確認できます。
 ---
