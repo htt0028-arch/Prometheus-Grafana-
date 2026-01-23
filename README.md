@@ -184,7 +184,7 @@ scrape_configs:
       - targets: ['localhost:9100']
 ```
 
-#### systemdサービス `/etc/systemd/system/prometheus.services`
+#### systemdサービス `/etc/systemd/system/prometheus.service`
 
 ```ini
 [Unit]
