@@ -239,6 +239,30 @@ sudo systemctl start grafana-server
 * データソース追加 → Prometheus（URL: `http://localhost:9090`）
 * ダッシュボード ID **1860** を Import（Node Exporter Full）
 
+## 📊 ダッシュボード設定
+
+1. Grafana にログイン
+2. 左メニュー → ⚙️ Data sources → Add data source
+3. Prometheus を選択
+4. URL に http://localhost:9090 を入力 → 「Save & test」  
+　→ ✅ Successfully queried the Prometheus API. が表示されたらOK
+
+5. 左メニュー ➕ Create → Import Dashboard  
+　→ ID に 1860 を入力（Node Exporter Full）  
+　→ 「Load」→ Data source に Prometheus を選択 → Import  
+|監視項目|内容|
+|---|---|
+|CPU Usage|CPU使用率の推移|  
+|Memory Usage|メモリ利用率|
+|Disk Spaceディスク容量の使用状況|
+|Network I/O|ネットワーク入出力量|
+
+
+⸻
+
+🔍 動作確認（監視可視化）
+
+Grafana の Dashboards → Node Exporter Full を開くと以下が確認できます。
 ---
 
 ## 📚 使用技術
