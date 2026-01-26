@@ -193,7 +193,7 @@ After=network.target
 
 [Service]
 User=root
-ExecStart=/usr/local/bin/prometheus \
+ExecStart=/opt/prometheus/prometheus \
   --config.file=/etc/prometheus/prometheus.yml \
   --storage.tsdb.path=/var/lib/prometheus \
   --web.console.templates=/etc/prometheus/consoles \
