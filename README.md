@@ -235,16 +235,16 @@ sudo systemctl start grafana-server
 
 ### 6️⃣ Grafana 設定
 
-* `http://<サーバIP>:3000` にアクセス
-* データソース追加 → Prometheus（URL: `http://localhost:9090`）
+* `http://localhost:3000/` にアクセス
+* データソース追加 → Prometheus（URL: `http://localhost:9090/`）
 * ダッシュボード ID **1860** を Import（Node Exporter Full）
 
 ## 📊 ダッシュボード設定
 
 1. Grafana にログイン
-2. 左メニュー → ⚙️ Data sources → Add data source
+2. 左メニュー → Connections → Data sources
 3. Prometheus を選択
-4. URL に http://localhost:9090 を入力 → 「Save & test」  
+4. URL に http://localhost:9090/ を入力 → 「Save & test」  
 　→ ✅ Successfully queried the Prometheus API. が表示されたらOK
 
 5. 左メニュー ➕ Create → Import Dashboard  
